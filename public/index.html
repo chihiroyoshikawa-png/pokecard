@@ -543,6 +543,42 @@
       display: block;
     }
 
+    /* ===== 丸い写真窓 ===== */
+    .card-photo-circle {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      background: rgba(255,255,255,0.6);
+      overflow: hidden;
+      z-index: 2;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .card-photo-circle img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .card-photo-circle .photo-placeholder {
+      font-size: 10px;
+      color: #999;
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    .card-photo-circle input[type="file"] {
+      display: none;
+    }
+
     .creature-loading {
       display: flex;
       flex-direction: column;
@@ -1044,6 +1080,10 @@
 
         <!-- カード中央：画像 -->
         <div class="card-image-frame" id="creatureImageWrapper">
+          <div class="card-photo-circle" id="photoCircle" onclick="document.getElementById('photoInput').click()">
+            <span class="photo-placeholder" id="photoPlaceholder">📷<br>写真</span>
+            <input type="file" id="photoInput" accept="image/*" onchange="handlePhotoUpload(event)">
+          </div>
           <div class="creature-loading" id="creatureLoading">
             <div class="mini-spinner"></div>
             <span>生成中...</span>
@@ -1278,6 +1318,23 @@ function showResult(type, name, zukan, reason, moves) {
     `;
     movesList.appendChild(li);
   });
+}
+
+function handlePhotoUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const circle = document.getElementById('photoCircle');
+    const placeholder = document.getElementById('photoPlaceholder');
+    placeholder.style.display = 'none';
+    const existing = circle.querySelector('img');
+    if (existing) existing.remove();
+    const img = document.createElement('img');
+    img.src = e.target.result;
+    circle.appendChild(img);
+  };
+  reader.readAsDataURL(file);
 }
 
 function resetForm() {
