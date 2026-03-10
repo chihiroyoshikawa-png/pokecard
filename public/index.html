@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NEWh ポケモンタイプ診断</title>
+  <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #e8f0f8;
+      --card: rgba(255,255,255,0.85);
+      --card-border: rgba(255,255,255,0.4);
+      --red: #ef1a10;
+      --red-dark: #cc1208;
+      --text: #1a2a3a;
+      --text-dim: #5a7088;
+      --fire: #d45a20;
+      --water: #3a6fd8;
+      --electric: #c8a010;
+      --flying: #7a60d0;
+      --grass: #3a8830;
+      --ice: #3a9898;
+      --fire-bg: rgba(212,90,32,0.07);
+      --water-bg: rgba(58,111,216,0.07);
+      --electric-bg: rgba(200,160,16,0.07);
+      --flying-bg: rgba(122,96,208,0.07);
+      --grass-bg: rgba(58,136,48,0.07);
+      --ice-bg: rgba(58,152,152,0.07);
+    }
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background: linear-gradient(165deg, #c0dff0 0%, #90c8e8 30%, #78b8e0 60%, #68a8d4 100%);
+      background-attachment: fixed;
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 20px 16px 40px;
+    }
+
+    /* ===== HEADER ===== */
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+      padding-top: 20px;
+    }
+
+    .header-leds {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .led {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.3);
+      transition: all 0.3s;
+    }
+
+    .led.active { background: var(--red); box-shadow: 0 0 6px var(--red); }
+    .led.blue { background: #60c0ff; box-shadow: 0 0 6px #60c0ff; }
+    .led.green { background: #60e890; box-shadow: 0 0 6px #60e890; }
+
+    .header-title {
+      font-family: 'DotGothic16', monospace;
+      font-size: 11px;
+      letter-spacing: 4px;
+      color: var(--red);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .header-logo {
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.9);
+      letter-spacing: 2px;
+      margin-bottom: 6px;
+    }
+
+    .header-logo span {
+      color: var(--red);
+      font-weight: 900;
+    }
+
+    .header-subtitle {
+      font-family: 'DotGothic16', monospace;
+      font-size: 22px;
+      letter-spacing: 2px;
+      color: #fff;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    }
+
+    .header-desc {
+      font-size: 12px;
+      color: rgba(255,255,255,0.75);
+      margin-top: 8px;
+      line-height: 1.6;
+    }
+
+    /* ===== TYPE ICONS ROW ===== */
+    .type-icons-row {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .type-icon-small {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      backdrop-filter: blur(4px);
+      transition: all 0.3s;
+    }
+
+    /* ===== FORM ===== */
+    .form-section {
+      transition: opacity 0.4s, transform 0.4s;
+    }
+
+    .form-section.hidden {
+      opacity: 0;
+      transform: translateY(20px);
+      pointer-events: none;
+      position: absolute;
+      visibility: hidden;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .field-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .field-label .required {
+      font-size: 10px;
+      color: var(--red);
+      border: 1px solid var(--red);
+      border-radius: 3px;
+      padding: 1px 4px;
+    }
+
+    .field-label .optional {
+      font-size: 10px;
+      color: rgba(255,255,255,0.6);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 3px;
+      padding: 1px 4px;
+    }
+
+    .field-hint {
+      font-size: 11px;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 6px;
+    }
+
+    .field input,
+    .field textarea {
+      width: 100%;
+      background: rgba(255,255,255,0.9);
+      border: 1px solid rgba(255,255,255,0.5);
+      border-radius: 8px;
+      color: #1a2a3a;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 15px;
+      padding: 12px 14px;
+      outline: none;
+      backdrop-filter: blur(4px);
+      transition: border-color 0.3s, box-shadow 0.3s;
+      -webkit-appearance: none;
+    }
+
+    .field input:focus,
+    .field textarea:focus {
+      border-color: var(--red);
+      box-shadow: 0 0 0 2px rgba(239,26,16,0.2);
+      background: rgba(255,255,255,0.95);
+    }
+
+    .field textarea {
+      resize: vertical;
+      min-height: 80px;
+      line-height: 1.6;
+    }
+
+    .field input::placeholder,
+    .field textarea::placeholder {
+      color: #aaa;
+      font-size: 13px;
+    }
+
+    /* ===== CREATURE MOTIF SELECTOR ===== */
+    .motif-section {
+      margin-bottom: 16px;
+    }
+
+    .motif-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .motif-option {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 12px 4px;
+      background: rgba(255,255,255,0.15);
+      border: 2px solid rgba(255,255,255,0.25);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.25s;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .motif-option:hover {
+      background: rgba(255,255,255,0.25);
+      border-color: rgba(255,255,255,0.4);
+    }
+
+    .motif-option.selected {
+      background: rgba(255,255,255,0.85);
+      border-color: var(--red);
+      box-shadow: 0 0 0 2px rgba(239,26,16,0.25);
+    }
+
+    .motif-option .motif-emoji {
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .motif-option .motif-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.85);
+      letter-spacing: 0.5px;
+    }
+
+    .motif-option.selected .motif-label {
+      color: var(--text);
+    }
+
+    .motif-hint {
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+      margin-top: 6px;
+      text-align: center;
+    }
+
+    /* ===== VIBE SELECTOR ===== */
+    .vibe-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .vibe-option {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 14px 4px;
+      background: rgba(255,255,255,0.15);
+      border: 2px solid rgba(255,255,255,0.25);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.25s;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .vibe-option:hover {
+      background: rgba(255,255,255,0.25);
+      border-color: rgba(255,255,255,0.4);
+    }
+
+    .vibe-option.selected {
+      background: rgba(255,255,255,0.85);
+      border-color: var(--red);
+      box-shadow: 0 0 0 2px rgba(239,26,16,0.25);
+    }
+
+    .vibe-option .vibe-word {
+      font-family: 'DotGothic16', monospace;
+      font-size: 16px;
+      color: rgba(255,255,255,0.9);
+      letter-spacing: 1px;
+    }
+
+    .vibe-option.selected .vibe-word {
+      color: var(--text);
+    }
+
+    /* ===== SUBMIT BUTTON ===== */
+    .submit-btn {
+      display: block;
+      width: 100%;
+      margin-top: 24px;
+      padding: 16px;
+      background: linear-gradient(135deg, var(--red), var(--red-dark));
+      color: white;
+      font-family: 'DotGothic16', monospace;
+      font-size: 16px;
+      letter-spacing: 3px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(227,53,13,0.3);
+    }
+
+    .submit-btn:active {
+      transform: translateY(0);
+    }
+
+    .submit-btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+      transform: translateX(-100%);
+      animation: btnShine 3s infinite;
+    }
+
+    @keyframes btnShine {
+      0%, 100% { transform: translateX(-100%); }
+      50% { transform: translateX(100%); }
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* ===== SCANNING OVERLAY ===== */
+    .scanning-section {
+      display: none;
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .scanning-section.active {
+      display: block;
+      animation: fadeIn 0.4s;
+    }
+
+    .scan-ring {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 32px;
+      border-radius: 50%;
+      border: 3px solid rgba(255,255,255,0.25);
+      border-top-color: var(--red);
+      animation: spin 0.8s linear infinite;
+      position: relative;
+    }
+
+    .scan-ring::after {
+      content: '';
+      position: absolute;
+      inset: 8px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-bottom-color: var(--red);
+      animation: spin 1.2s linear infinite reverse;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .scan-type-cycle {
+      font-size: 36px;
+      margin-bottom: 24px;
+      min-height: 48px;
+    }
+
+    .scan-text {
+      font-family: 'DotGothic16', monospace;
+      font-size: 14px;
+      color: #fff;
+      letter-spacing: 4px;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+
+    .scan-bar {
+      width: 200px;
+      height: 4px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 2px;
+      margin: 16px auto 0;
+      overflow: hidden;
+    }
+
+    .scan-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--red);
+      border-radius: 2px;
+      transition: width 0.1s;
+    }
+
+    /* ===== RESULT CARD (TRADING CARD STYLE) ===== */
+    .result-section {
+      display: none;
+    }
+
+    .result-section.active {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: fadeIn 0.6s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-card {
+      width: 340px;
+      border-radius: 14px;
+      overflow: hidden;
+      position: relative;
+      box-shadow:
+        0 0 0 3px rgba(0,0,0,0.15),
+        0 8px 32px rgba(0,0,0,0.25),
+        inset 0 1px 0 rgba(255,255,255,0.3);
+    }
+
+    /* カード外枠（タイプ色ボーダー） */
+    .result-card-inner {
+      margin: 6px;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 2px solid rgba(0,0,0,0.1);
+      background: #fff;
+    }
+
+    /* ===== カード上部：名前 + タイプ + HP ===== */
+    .card-top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px 8px;
+    }
+
+    .card-top-bar .card-stage {
+      font-family: 'DotGothic16', monospace;
+      font-size: 10px;
+      color: #888;
+      letter-spacing: 1px;
+    }
+
+    .card-top-bar .card-name {
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--text);
+      flex: 1;
+      text-align: center;
+    }
+
+    .card-top-bar .card-hp {
+      font-family: 'DotGothic16', monospace;
+      font-size: 11px;
+      color: #cc0000;
+      letter-spacing: 1px;
+    }
+
+    .card-type-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding-bottom: 8px;
+    }
+
+    .card-type-icon {
+      font-size: 18px;
+    }
+
+    .card-type-label {
+      font-family: 'DotGothic16', monospace;
+      font-size: 12px;
+      letter-spacing: 2px;
+      padding: 2px 12px;
+      border-radius: 10px;
+    }
+
+    /* ===== カード中央：画像エリア ===== */
+    .card-image-frame {
+      margin: 0 10px;
+      border: 3px solid;
+      border-radius: 6px;
+      overflow: hidden;
+      position: relative;
+      aspect-ratio: 4 / 3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card-image-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .creature-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      height: 100%;
+      min-height: 200px;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .creature-loading .mini-spinner {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 3px solid rgba(0,0,0,0.1);
+      border-top-color: var(--red);
+      animation: spin 0.8s linear infinite;
+    }
+
+    /* ===== カード下部：図鑑テキスト + わざ ===== */
+    .card-body {
+      padding: 10px 14px 6px;
+    }
+
+    .card-zukan {
+      font-family: 'DotGothic16', monospace;
+      font-size: 10px;
+      line-height: 1.9;
+      letter-spacing: 0.5px;
+      color: #444;
+      padding: 8px 10px;
+      background: rgba(0,0,0,0.03);
+      border-radius: 6px;
+      border: 1px solid rgba(0,0,0,0.06);
+      margin-bottom: 10px;
+    }
+
+    .card-moves {
+      list-style: none;
+    }
+
+    .card-moves li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 0;
+      border-top: 1px solid rgba(0,0,0,0.06);
+      animation: slideIn 0.4s both;
+    }
+
+    .card-moves li:nth-child(1) { animation-delay: 0.6s; }
+    .card-moves li:nth-child(2) { animation-delay: 0.8s; }
+    .card-moves li:nth-child(3) { animation-delay: 1.0s; }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-12px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0); }
+      50% { transform: scale(1.2); }
+      to { transform: scale(1); }
+    }
+
+    .card-moves .move-cost {
+      font-size: 16px;
+      flex-shrink: 0;
+      width: 24px;
+      text-align: center;
+    }
+
+    .card-moves .move-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .card-moves .move-name {
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .card-moves .move-desc {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 1px;
+    }
+
+    .card-moves .move-dmg {
+      font-family: 'DotGothic16', monospace;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      flex-shrink: 0;
+      min-width: 28px;
+      text-align: right;
+    }
+
+    /* ===== カード最下部：判定理由 + フッター ===== */
+    .card-reason {
+      margin: 0 14px;
+      padding: 8px 10px;
+      font-size: 10px;
+      line-height: 1.7;
+      color: #666;
+      border-top: 1px solid rgba(0,0,0,0.08);
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 14px 10px;
+      font-family: 'DotGothic16', monospace;
+      font-size: 9px;
+      color: #aaa;
+      letter-spacing: 1px;
+    }
+
+    /* ===== RETRY BUTTON ===== */
+    .retry-btn {
+      display: block;
+      width: 340px;
+      margin-top: 20px;
+      padding: 14px;
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+      font-family: 'DotGothic16', monospace;
+      font-size: 13px;
+      letter-spacing: 2px;
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 12px;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+      transition: all 0.3s;
+    }
+
+    .retry-btn:hover {
+      background: rgba(255,255,255,0.3);
+      border-color: rgba(255,255,255,0.5);
+    }
+
+    /* ===== TYPE-SPECIFIC CARD COLORS ===== */
+    .type-fire { --card-color: var(--fire); }
+    .type-water { --card-color: var(--water); }
+    .type-electric { --card-color: var(--electric); }
+    .type-flying { --card-color: var(--flying); }
+    .type-grass { --card-color: var(--grass); }
+    .type-ice { --card-color: var(--ice); }
+
+    .type-fire .result-card { background: linear-gradient(145deg, #f8d8c0 0%, #f0b898 30%, #e8a070 100%); }
+    .type-water .result-card { background: linear-gradient(145deg, #c8d8f8 0%, #a0c0f0 30%, #88b0e8 100%); }
+    .type-electric .result-card { background: linear-gradient(145deg, #f8f0c0 0%, #f0e098 30%, #e8d070 100%); }
+    .type-flying .result-card { background: linear-gradient(145deg, #e0d0f0 0%, #c8b8e8 30%, #b8a0e0 100%); }
+    .type-grass .result-card { background: linear-gradient(145deg, #c8e8c0 0%, #a0d898 30%, #88c880 100%); }
+    .type-ice .result-card { background: linear-gradient(145deg, #c8e8e8 0%, #a0d8d8 30%, #88c8c8 100%); }
+
+    .type-fire .card-image-frame { border-color: #c06030; }
+    .type-water .card-image-frame { border-color: #4878b8; }
+    .type-electric .card-image-frame { border-color: #b89830; }
+    .type-flying .card-image-frame { border-color: #8868b0; }
+    .type-grass .card-image-frame { border-color: #488840; }
+    .type-ice .card-image-frame { border-color: #488888; }
+
+    .type-fire .card-type-label { background: rgba(212,90,32,0.15); color: var(--fire); }
+    .type-water .card-type-label { background: rgba(58,111,216,0.15); color: var(--water); }
+    .type-electric .card-type-label { background: rgba(200,160,16,0.15); color: var(--electric); }
+    .type-flying .card-type-label { background: rgba(122,96,208,0.15); color: var(--flying); }
+    .type-grass .card-type-label { background: rgba(58,136,48,0.15); color: var(--grass); }
+    .type-ice .card-type-label { background: rgba(58,152,152,0.15); color: var(--ice); }
+
+    .type-fire .card-moves .move-name { color: var(--fire); }
+    .type-water .card-moves .move-name { color: var(--water); }
+    .type-electric .card-moves .move-name { color: var(--electric); }
+    .type-flying .card-moves .move-name { color: var(--flying); }
+    .type-grass .card-moves .move-name { color: var(--grass); }
+    .type-ice .card-moves .move-name { color: var(--ice); }
+
+    /* ===== TYPE DESCRIPTIONS ===== */
+    .type-desc-panel {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 14px;
+      padding: 16px 14px;
+      margin-bottom: 28px;
+      backdrop-filter: blur(4px);
+    }
+
+    .type-desc-panel-title {
+      font-family: 'DotGothic16', monospace;
+      font-size: 12px;
+      color: rgba(255,255,255,0.7);
+      letter-spacing: 2px;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .type-desc-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .type-desc-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.06);
+    }
+
+    .type-desc-item .td-emoji {
+      font-size: 20px;
+      flex-shrink: 0;
+      line-height: 1.3;
+    }
+
+    .type-desc-item .td-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .type-desc-item .td-name {
+      font-size: 12px;
+      font-weight: 900;
+      color: rgba(255,255,255,0.95);
+      margin-bottom: 2px;
+    }
+
+    .type-desc-item .td-text {
+      font-size: 11px;
+      color: rgba(255,255,255,0.65);
+      line-height: 1.5;
+    }
+
+    /* ===== VALIDATION ===== */
+    .field.error input,
+    .field.error textarea {
+      border-color: var(--red);
+    }
+
+    .error-msg {
+      font-size: 11px;
+      color: #ff6060;
+      margin-top: 4px;
+      display: none;
+    }
+
+    .field.error .error-msg {
+      display: block;
+    }
+
+    /* ===== FOOTER ===== */
+    .footer {
+      text-align: center;
+      margin-top: 40px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.4);
+      font-family: 'DotGothic16', monospace;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-leds">
+      <div class="led active"></div>
+      <div class="led blue"></div>
+      <div class="led green"></div>
+    </div>
+    <div class="header-logo"><span>NEWh</span> POKÉDEX</div>
+    <div class="header-subtitle">ポケモンタイプ診断</div>
+    <div class="header-desc">あの人の特徴を入力して<br>ポケモン風タイプカードを生成しよう</div>
+  </div>
+
+  <!-- Type icons -->
+  <div class="type-icons-row">
+    <div class="type-icon-small">🔥</div>
+    <div class="type-icon-small">💧</div>
+    <div class="type-icon-small">⚡</div>
+    <div class="type-icon-small">🕊️</div>
+    <div class="type-icon-small">🌿</div>
+    <div class="type-icon-small">❄️</div>
+  </div>
+
+  <!-- Type descriptions -->
+  <div class="type-desc-panel">
+    <div class="type-desc-panel-title">▼ 6つのタイプ ▼</div>
+    <div class="type-desc-list">
+      <div class="type-desc-item">
+        <span class="td-emoji">🔥</span>
+        <div class="td-body">
+          <div class="td-name">火タイプ</div>
+          <div class="td-text">情熱的でエネルギッシュ。行動力があり、周囲を巻き込んで突き進む熱量の持ち主。</div>
+        </div>
+      </div>
+      <div class="type-desc-item">
+        <span class="td-emoji">💧</span>
+        <div class="td-body">
+          <div class="td-name">水タイプ</div>
+          <div class="td-text">柔軟で適応力が高い。穏やかだが芯がある。どんな環境にもなじむ包容力。</div>
+        </div>
+      </div>
+      <div class="type-desc-item">
+        <span class="td-emoji">⚡</span>
+        <div class="td-body">
+          <div class="td-name">電気タイプ</div>
+          <div class="td-text">ひらめきと瞬発力の持ち主。発想が鋭く、場に刺激と活気を与える存在。</div>
+        </div>
+      </div>
+      <div class="type-desc-item">
+        <span class="td-emoji">🕊️</span>
+        <div class="td-body">
+          <div class="td-name">飛行タイプ</div>
+          <div class="td-text">自由でフットワークが軽い。視野が広く、軽やかに人や場をつなぐ人。</div>
+        </div>
+      </div>
+      <div class="type-desc-item">
+        <span class="td-emoji">🌿</span>
+        <div class="td-body">
+          <div class="td-name">草タイプ</div>
+          <div class="td-text">癒しと安定感。人を育て支える力があり、じっくり成長し続ける人。</div>
+        </div>
+      </div>
+      <div class="type-desc-item">
+        <span class="td-emoji">❄️</span>
+        <div class="td-body">
+          <div class="td-name">氷タイプ</div>
+          <div class="td-text">冷静で分析力が高い。美意識・こだわりが強く、静かに確実に成果を出す人。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form -->
+  <div class="form-section" id="formSection">
+    <div class="field">
+      <label class="field-label">名前 <span class="required">必須</span></label>
+      <input type="text" id="inputName" placeholder="ニックネームでもOK">
+      <div class="error-msg">名前を入力してください</div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">性格・魅力 <span class="required">必須</span></label>
+      <div class="field-hint">どんな人？どこが魅力的？</div>
+      <textarea id="inputPersonality" placeholder="例：いつも明るくて周りを元気にしてくれる。困っている人がいると放っておけない性格。"></textarea>
+      <div class="error-msg">性格・魅力を入力してください</div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">ソフトスキル <span class="optional">任意</span></label>
+      <div class="field-hint">コミュ力、リーダーシップ、気配りなど</div>
+      <input type="text" id="inputSoft" placeholder="例：聞き上手、場の空気を読むのがうまい">
+    </div>
+
+    <div class="field">
+      <label class="field-label">ハードスキル <span class="optional">任意</span></label>
+      <div class="field-hint">プログラミング、デザイン、営業、料理など</div>
+      <input type="text" id="inputHard" placeholder="例：デザイン、プレゼン資料づくり">
+    </div>
+
+    <div class="field">
+      <label class="field-label">趣味・好きなこと <span class="optional">任意</span></label>
+      <div class="field-hint">休日の過ごし方、ハマっていることなど</div>
+      <input type="text" id="inputHobby" placeholder="例：カフェ巡り、映画、筋トレ">
+    </div>
+
+    <div class="field">
+      <label class="field-label">印象的なエピソード <span class="optional">任意</span></label>
+      <div class="field-hint">その人らしいなーと思った出来事</div>
+      <textarea id="inputEpisode" placeholder="例：飲み会で初対面の人とすぐ仲良くなっていた"></textarea>
+    </div>
+
+    <div class="field vibe-section">
+      <label class="field-label">その人の雰囲気は？ <span class="required">必須</span></label>
+      <div class="field-hint">ぴったりなオノマトペを1〜2つ選んでください</div>
+      <div class="vibe-grid" id="vibeGrid">
+        <div class="vibe-option" data-vibe="fuwafuwa" onclick="toggleVibe(this)">
+          <span class="vibe-word">ふわふわ</span>
+        </div>
+        <div class="vibe-option" data-vibe="nikoniko" onclick="toggleVibe(this)">
+          <span class="vibe-word">にこにこ</span>
+        </div>
+        <div class="vibe-option" data-vibe="pokapoka" onclick="toggleVibe(this)">
+          <span class="vibe-word">ぽかぽか</span>
+        </div>
+        <div class="vibe-option" data-vibe="tekipaki" onclick="toggleVibe(this)">
+          <span class="vibe-word">てきぱき</span>
+        </div>
+        <div class="vibe-option" data-vibe="kirakira" onclick="toggleVibe(this)">
+          <span class="vibe-word">きらきら</span>
+        </div>
+        <div class="vibe-option" data-vibe="wakuwaku" onclick="toggleVibe(this)">
+          <span class="vibe-word">わくわく</span>
+        </div>
+        <div class="vibe-option" data-vibe="kiri" onclick="toggleVibe(this)">
+          <span class="vibe-word">きりっ</span>
+        </div>
+        <div class="vibe-option" data-vibe="shu" onclick="toggleVibe(this)">
+          <span class="vibe-word">しゅっ</span>
+        </div>
+        <div class="vibe-option" data-vibe="meramera" onclick="toggleVibe(this)">
+          <span class="vibe-word">めらめら</span>
+        </div>
+      </div>
+      <div class="motif-hint">選択中: <span id="vibeCount">0</span>/2</div>
+      <div class="error-msg">雰囲気を選んでください</div>
+    </div>
+
+    <div class="field motif-section">
+      <label class="field-label">キャラクターイメージ <span class="required">必須</span></label>
+      <div class="field-hint">その人のイメージに近い生き物を1〜2つ選んでください</div>
+      <div class="motif-grid" id="motifGrid">
+        <div class="motif-option" data-motif="cat" onclick="toggleMotif(this)">
+          <span class="motif-emoji">🐱</span>
+          <span class="motif-label">ネコ</span>
+        </div>
+        <div class="motif-option" data-motif="dog" onclick="toggleMotif(this)">
+          <span class="motif-emoji">🐶</span>
+          <span class="motif-label">イヌ</span>
+        </div>
+        <div class="motif-option" data-motif="fox" onclick="toggleMotif(this)">
+          <span class="motif-emoji">🦊</span>
+          <span class="motif-label">キツネ</span>
+        </div>
+        <div class="motif-option" data-motif="rabbit" onclick="toggleMotif(this)">
+          <span class="motif-emoji">🐰</span>
+          <span class="motif-label">ウサギ</span>
+        </div>
+        <div class="motif-option" data-motif="bear" onclick="toggleMotif(this)">
+          <span class="motif-emoji">🐻</span>
+          <span class="motif-label">クマ</span>
+        </div>
+        <div class="motif-option" data-motif="bird" onclick="toggleMotif(this)">
+          <span class="motif-emoji">🐦</span>
+          <span class="motif-label">トリ</span>
+        </div>
+        <div class="motif-option" data-motif="dragon" onclick="toggleMotif(this)">
+          <span class="motif-emoji">🐉</span>
+          <span class="motif-label">ドラゴン</span>
+        </div>
+        <div class="motif-option" data-motif="wolf" onclick="toggleMotif(this)">
+          <span class="motif-emoji">🐺</span>
+          <span class="motif-label">オオカミ</span>
+        </div>
+        <div class="motif-option" data-motif="lizard" onclick="toggleMotif(this)">
+          <span class="motif-emoji">🦎</span>
+          <span class="motif-label">トカゲ</span>
+        </div>
+        <div class="motif-option" data-motif="fish" onclick="toggleMotif(this)">
+          <span class="motif-emoji">🐠</span>
+          <span class="motif-label">サカナ</span>
+        </div>
+        <div class="motif-option" data-motif="butterfly" onclick="toggleMotif(this)">
+          <span class="motif-emoji">🦋</span>
+          <span class="motif-label">チョウ</span>
+        </div>
+        <div class="motif-option" data-motif="snake" onclick="toggleMotif(this)">
+          <span class="motif-emoji">🐍</span>
+          <span class="motif-label">ヘビ</span>
+        </div>
+      </div>
+      <div class="motif-hint">選択中: <span id="motifCount">0</span>/2</div>
+      <div class="error-msg">キャラクターイメージを選んでください</div>
+    </div>
+
+    <button class="submit-btn" id="submitBtn" onclick="startScan()">SCAN START</button>
+  </div>
+
+  <!-- Scanning -->
+  <div class="scanning-section" id="scanSection">
+    <div class="scan-ring"></div>
+    <div class="scan-type-cycle" id="scanCycle">🔥</div>
+    <div class="scan-text">SCANNING...</div>
+    <div class="scan-bar"><div class="scan-bar-fill" id="scanBarFill"></div></div>
+  </div>
+
+  <!-- Result -->
+  <div class="result-section" id="resultSection">
+    <div class="result-card" id="resultCard">
+      <div class="result-card-inner">
+        <!-- カード上部：名前・タイプ -->
+        <div class="card-top-bar">
+          <span class="card-stage">NEWh</span>
+          <span class="card-name" id="cardName"></span>
+          <span class="card-hp" id="cardHP">HP ???</span>
+        </div>
+        <div class="card-type-row">
+          <span class="card-type-icon" id="cardTypeIcon"></span>
+          <span class="card-type-label" id="cardTypeLabel"></span>
+        </div>
+
+        <!-- カード中央：画像 -->
+        <div class="card-image-frame" id="creatureImageWrapper">
+          <div class="creature-loading" id="creatureLoading">
+            <div class="mini-spinner"></div>
+            <span>生成中...</span>
+          </div>
+        </div>
+
+        <!-- 図鑑テキスト -->
+        <div class="card-body">
+          <div class="card-zukan" id="resultZukan"></div>
+
+          <!-- わざリスト -->
+          <ul class="card-moves" id="resultMoves"></ul>
+        </div>
+
+        <!-- 判定理由 -->
+        <div class="card-reason" id="resultReason"></div>
+
+        <!-- カードフッター -->
+        <div class="card-footer">
+          <span>NEWh POKÉDEX</span>
+          <span id="cardNo">No.001</span>
+        </div>
+      </div>
+    </div>
+    <button class="retry-btn" onclick="resetForm()">もういちど診断する</button>
+  </div>
+
+  <div class="footer">NEWh ポケモンタイプ診断</div>
+</div>
+
+<script>
+// ===== TYPE DEFINITIONS =====
+const TYPES = {
+  fire:     { name: '火', emoji: '🔥', label: '火タイプ', class: 'type-fire' },
+  water:    { name: '水', emoji: '💧', label: '水タイプ', class: 'type-water' },
+  electric: { name: '電気', emoji: '⚡', label: '電気タイプ', class: 'type-electric' },
+  flying:   { name: '飛行', emoji: '🕊️', label: '飛行タイプ', class: 'type-flying' },
+  grass:    { name: '草', emoji: '🌿', label: '草タイプ', class: 'type-grass' },
+  ice:      { name: '氷', emoji: '❄️', label: '氷タイプ', class: 'type-ice' }
+};
+
+// ===== VIBE SELECTION =====
+const selectedVibes = new Set();
+
+function toggleVibe(el) {
+  const vibe = el.dataset.vibe;
+  if (selectedVibes.has(vibe)) {
+    selectedVibes.delete(vibe);
+    el.classList.remove('selected');
+  } else {
+    if (selectedVibes.size >= 2) return;
+    selectedVibes.add(vibe);
+    el.classList.add('selected');
+  }
+  document.getElementById('vibeCount').textContent = selectedVibes.size;
+  el.closest('.field').classList.remove('error');
+}
+
+// ===== MOTIF SELECTION =====
+const selectedMotifs = new Set();
+
+function toggleMotif(el) {
+  const motif = el.dataset.motif;
+  if (selectedMotifs.has(motif)) {
+    selectedMotifs.delete(motif);
+    el.classList.remove('selected');
+  } else {
+    if (selectedMotifs.size >= 2) return; // max 2
+    selectedMotifs.add(motif);
+    el.classList.add('selected');
+  }
+  document.getElementById('motifCount').textContent = selectedMotifs.size;
+  el.closest('.field').classList.remove('error');
+}
+
+// ===== UI CONTROL =====
+let scanIntervals = { cycle: null, progress: null };
+
+async function startScan() {
+  // Validate
+  const name = document.getElementById('inputName').value.trim();
+  const personality = document.getElementById('inputPersonality').value.trim();
+
+  let hasError = false;
+  const nameField = document.getElementById('inputName').closest('.field');
+  const persField = document.getElementById('inputPersonality').closest('.field');
+  const vibeField = document.querySelector('.vibe-section');
+  const motifField = document.querySelector('.motif-section');
+  nameField.classList.remove('error');
+  persField.classList.remove('error');
+  vibeField.classList.remove('error');
+  motifField.classList.remove('error');
+
+  if (!name) { nameField.classList.add('error'); hasError = true; }
+  if (!personality) { persField.classList.add('error'); hasError = true; }
+  if (selectedVibes.size === 0) { vibeField.classList.add('error'); hasError = true; }
+  if (selectedMotifs.size === 0) { motifField.classList.add('error'); hasError = true; }
+  if (hasError) return;
+
+  const payload = {
+    name,
+    personality,
+    soft: document.getElementById('inputSoft').value.trim(),
+    hard: document.getElementById('inputHard').value.trim(),
+    hobby: document.getElementById('inputHobby').value.trim(),
+    episode: document.getElementById('inputEpisode').value.trim(),
+    vibes: Array.from(selectedVibes),
+    motifs: Array.from(selectedMotifs)
+  };
+
+  // Hide form, show scanning
+  document.getElementById('formSection').classList.add('hidden');
+  document.getElementById('scanSection').classList.add('active');
+  document.getElementById('submitBtn').disabled = true;
+
+  // Start scan animation
+  const emojis = ['🔥','💧','⚡','🕊️','🌿','❄️'];
+  let emojiIdx = 0;
+  scanIntervals.cycle = setInterval(() => {
+    document.getElementById('scanCycle').textContent = emojis[emojiIdx % emojis.length];
+    emojiIdx++;
+  }, 200);
+
+  let progress = 0;
+  const barFill = document.getElementById('scanBarFill');
+  scanIntervals.progress = setInterval(() => {
+    if (progress < 85) { progress += 1; barFill.style.width = progress + '%'; }
+  }, 100);
+
+  // Call API
+  try {
+    const res = await fetch('/api/diagnose', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || data.error) {
+      throw new Error(data.error || 'サーバーエラーが発生しました');
+    }
+
+    // Fill progress to 100%
+    clearInterval(scanIntervals.progress);
+    barFill.style.width = '100%';
+
+    // Brief pause for visual satisfaction
+    await new Promise(r => setTimeout(r, 500));
+
+    clearInterval(scanIntervals.cycle);
+    showResult(data.type, name, data.zukan, data.reason, data.moves);
+
+    // 画像生成を非同期で開始（結果表示後にバックグラウンドで）
+    generateCreatureImage(data.type, Array.from(selectedMotifs), Array.from(selectedVibes), data.creature_prompt);
+
+  } catch (err) {
+    clearInterval(scanIntervals.cycle);
+    clearInterval(scanIntervals.progress);
+    alert('エラー: ' + err.message);
+    resetForm();
+  }
+}
+
+async function generateCreatureImage(type, motifs, vibes, creaturePrompt) {
+  const wrapper = document.getElementById('creatureImageWrapper');
+  const loading = document.getElementById('creatureLoading');
+  loading.style.display = 'flex';
+
+  try {
+    const res = await fetch('/api/generate-image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, motifs, vibes, creature_prompt: creaturePrompt })
+    });
+
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error);
+
+    loading.style.display = 'none';
+    const img = document.createElement('img');
+    img.src = data.image_url;
+    img.alt = 'ポケモン風キャラクター';
+    wrapper.appendChild(img);
+  } catch (err) {
+    loading.innerHTML = '<span style="color:#ff6060;font-size:12px;">画像の生成に失敗しました</span>';
+  }
+}
+
+function showResult(type, name, zukan, reason, moves) {
+  document.getElementById('scanSection').classList.remove('active');
+  document.getElementById('resultSection').classList.add('active');
+
+  // 画像エリアをリセット
+  const wrapper = document.getElementById('creatureImageWrapper');
+  wrapper.querySelectorAll('img').forEach(img => img.remove());
+  document.getElementById('creatureLoading').style.display = 'flex';
+  document.getElementById('creatureLoading').innerHTML =
+    '<div class="mini-spinner"></div><span>生成中...</span>';
+
+  const typeInfo = TYPES[type];
+  const card = document.getElementById('resultCard');
+
+  card.className = 'result-card ' + typeInfo.class;
+
+  // カード上部
+  document.getElementById('cardName').textContent = name;
+  document.getElementById('cardHP').textContent = 'HP ' + (Math.floor(Math.random() * 8) + 3) + '0';
+  document.getElementById('cardTypeIcon').textContent = typeInfo.emoji;
+  document.getElementById('cardTypeLabel').textContent = typeInfo.label;
+
+  // 図鑑テキスト
+  document.getElementById('resultZukan').textContent = zukan;
+
+  // 判定理由
+  document.getElementById('resultReason').textContent = reason;
+
+  // カード番号（ランダム）
+  document.getElementById('cardNo').textContent = 'No.' + String(Math.floor(Math.random() * 999) + 1).padStart(3, '0');
+
+  // わざリスト
+  const movesList = document.getElementById('resultMoves');
+  movesList.innerHTML = '';
+  moves.forEach((m, i) => {
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <span class="move-cost">${typeInfo.emoji}</span>
+      <div class="move-info">
+        <div class="move-name">${m.name || m.name}</div>
+        <div class="move-desc">${m.description || m.desc}</div>
+      </div>
+    `;
+    movesList.appendChild(li);
+  });
+}
+
+function resetForm() {
+  document.getElementById('resultSection').classList.remove('active');
+  document.getElementById('formSection').classList.remove('hidden');
+  document.getElementById('scanBarFill').style.width = '0%';
+  document.getElementById('submitBtn').disabled = false;
+
+  // Clear fields
+  ['inputName','inputPersonality','inputSoft','inputHard','inputHobby','inputEpisode']
+    .forEach(id => document.getElementById(id).value = '');
+
+  // バイブ・モチーフ選択をリセット
+  selectedVibes.clear();
+  document.querySelectorAll('.vibe-option.selected').forEach(el => el.classList.remove('selected'));
+  document.getElementById('vibeCount').textContent = '0';
+  selectedMotifs.clear();
+  document.querySelectorAll('.motif-option.selected').forEach(el => el.classList.remove('selected'));
+  document.getElementById('motifCount').textContent = '0';
+
+  document.querySelectorAll('.field.error').forEach(f => f.classList.remove('error'));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+
+</body>
+</html>
