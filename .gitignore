@@ -3,3 +3,4 @@
 api_key.txt
 error.log
 *.jpg
+generated/
