@@ -1269,7 +1269,8 @@ async function generateCreatureImage(type, motifs, vibes, creaturePrompt) {
     img.alt = 'ポケモン風キャラクター';
     wrapper.appendChild(img);
   } catch (err) {
-    loading.innerHTML = '<span style="color:#ff6060;font-size:12px;">画像の生成に失敗しました</span>';
+    console.error('画像生成エラー:', err);
+    loading.innerHTML = '<span style="color:#ff6060;font-size:12px;">画像の生成に失敗しました<br>' + (err.message || '') + '</span>';
   }
 }
 
