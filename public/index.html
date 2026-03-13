@@ -702,6 +702,35 @@
       letter-spacing: 1px;
     }
 
+    /* ===== INPUT SUMMARY ===== */
+    .input-summary {
+      width: 340px;
+      margin-top: 20px;
+      padding: 14px 16px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 12px;
+      backdrop-filter: blur(4px);
+      color: rgba(255,255,255,0.85);
+      font-size: 11px;
+      line-height: 1.8;
+      text-align: left;
+    }
+    .input-summary-title {
+      font-family: 'DotGothic16', monospace;
+      font-size: 10px;
+      color: rgba(255,255,255,0.5);
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+    .input-summary-item {
+      margin-bottom: 4px;
+    }
+    .input-summary-label {
+      color: rgba(255,255,255,0.5);
+      font-size: 10px;
+    }
+
     /* ===== RETRY BUTTON ===== */
     .retry-btn {
       display: block;
@@ -1108,6 +1137,7 @@
         </div>
       </div>
     </div>
+    <div class="input-summary" id="inputSummary"></div>
     <button class="retry-btn" onclick="resetForm()">もういちど診断する</button>
   </div>
 
@@ -1235,7 +1265,7 @@ async function startScan() {
     await new Promise(r => setTimeout(r, 500));
 
     clearInterval(scanIntervals.cycle);
-    showResult(data.type, name, data.zukan, data.reason, data.moves);
+    showResult(data.type, name, data.zukan, data.reason, data.moves, payload);
 
     // 画像生成を非同期で開始（結果表示後にバックグラウンドで）
     generateCreatureImage(data.type, Array.from(selectedMotifs), Array.from(selectedVibes), data.creature_prompt);
@@ -1274,7 +1304,18 @@ async function generateCreatureImage(type, motifs, vibes, creaturePrompt) {
   }
 }
 
-function showResult(type, name, zukan, reason, moves) {
+const VIBE_LABELS = {
+  fuwafuwa: 'ふわふわ', nikoniko: 'にこにこ', pokapoka: 'ぽかぽか',
+  tekipaki: 'てきぱき', kirakira: 'きらきら', wakuwaku: 'わくわく',
+  kiri: 'きりっ', shu: 'しゅっ', meramera: 'めらめら'
+};
+const MOTIF_LABELS_DISP = {
+  cat: 'ネコ', dog: 'イヌ', fox: 'キツネ', rabbit: 'ウサギ',
+  bear: 'クマ', bird: 'トリ', dragon: 'ドラゴン', wolf: 'オオカミ',
+  lizard: 'トカゲ', fish: 'サカナ', butterfly: 'チョウ', snake: 'ヘビ'
+};
+
+function showResult(type, name, zukan, reason, moves, payload) {
   document.getElementById('scanSection').classList.remove('active');
   document.getElementById('resultSection').classList.add('active');
 
@@ -1319,6 +1360,25 @@ function showResult(type, name, zukan, reason, moves) {
     `;
     movesList.appendChild(li);
   });
+
+  // 入力内容サマリー
+  if (payload) {
+    const fields = [
+      { label: '名前', value: payload.name },
+      { label: '性格・魅力', value: payload.personality },
+      { label: 'ソフトスキル', value: payload.soft },
+      { label: 'ハードスキル', value: payload.hard },
+      { label: '趣味・好きなこと', value: payload.hobby },
+      { label: 'エピソード', value: payload.episode },
+      { label: '雰囲気', value: (payload.vibes || []).map(v => VIBE_LABELS[v] || v).join('、') },
+      { label: 'モチーフ', value: (payload.motifs || []).map(m => MOTIF_LABELS_DISP[m] || m).join('、') },
+    ];
+    const summaryEl = document.getElementById('inputSummary');
+    summaryEl.innerHTML = '<div class="input-summary-title">INPUT DATA</div>' +
+      fields.filter(f => f.value).map(f =>
+        `<div class="input-summary-item"><span class="input-summary-label">${f.label}:</span> ${f.value}</div>`
+      ).join('');
+  }
 }
 
 function handlePhotoUpload(event) {
